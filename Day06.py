@@ -30,4 +30,4 @@ while source != commun:
 while target != commun:
 	c += 1
 	target = fathers[target]
-print(f"Result of first star is {c}")
+print(f"Result of second star is {c}")
