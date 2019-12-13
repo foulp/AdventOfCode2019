@@ -5,30 +5,14 @@ class Point:
 		self.x = x
 		self.y = y
 
-def isBetween(a, b, c, epsilon):
-    crossproduct = (c.y - a.y) * (b.x - a.x) - (c.x - a.x) * (b.y - a.y)
-
-    # compare versus epsilon for floating point values, or != 0 if using integers
-    if abs(crossproduct) > epsilon:
-        return False
-
-    dotproduct = (c.x - a.x) * (b.x - a.x) + (c.y - a.y)*(b.y - a.y)
-    if dotproduct < 0:
-        return False
-
-    squaredlengthba = (b.x - a.x)*(b.x - a.x) + (b.y - a.y)*(b.y - a.y)
-    if dotproduct > squaredlengthba:
-        return False
-
-    return True
-
 def asteros_seen(rows, cols, i, j, epsilon):
 	a = Point(rows[i], cols[i])
 	b = Point(rows[j], cols[j])
 
 	for k in range(i+1, j):
 		c = Point(rows[k], cols[k])
-		if isBetween(a, b, c, epsilon):
+		crossproduct = (c.y - a.y) * (b.x - a.x) - (c.x - a.x) * (b.y - a.y)
+		if abs(crossproduct) <= epsilon:
 			return False
 	return True
 
@@ -38,9 +22,25 @@ def max_astero_seen(grid, epsilon=0):
 	for i in range(rows.shape[0]):
 		for j in range(i+1, cols.shape[0]):
 			if asteros_seen(rows, cols, i, j, epsilon):
-				sights[i, j] = 1
-				sights[j, i] = 1
+				sights[i, j] = sights[j, i] = 1
 	return max((v, cols[i], rows[i]) for i, v in enumerate(sights.sum(axis=1)))
+
+def vaporized(grid, location, n=200):
+	station_y, station_x = location
+	grid[station_x, station_y] = 'X'
+	rows, cols = np.where(grid=='#')
+	c = 0
+	angles = [[np.angle((x-station_x) + (y-station_y)*1j, deg=True), -(x-station_x)**2-(y-station_y)**2, x, y] for x,y in zip(rows, cols)]
+	angles.sort(reverse=True)
+	#print(angles)
+	for i in range(len(angles)-1):
+		j, k = 1, 1
+		while angles[i][0] == angles[i+j][0]:
+			angles[i+j][0] -= k*360
+			k += 1
+			j += 1
+
+	return sorted(angles, reverse=True)[n-1][2:]
 
 if __name__ == '__main__':
 	with open('Day10_input.txt', 'r') as f:
@@ -57,6 +57,28 @@ if __name__ == '__main__':
 	grid_4 = np.array(list('.#..#..#######.###.#....###.#...###.##.###.##.#.#.....###..#..#.#..#.##..#.#.###.##...##.#.....#.#..'))
 	grid_4 = grid_4.reshape(10, 10)
 
+	s = """.#..##.###...#######
+##.############..##.
+.#.######.########.#
+.###.#######.####.#.
+#####.##.#.##.###.##
+..#####..#.#########
+####################
+#.####....###.#.#.##
+##.#################
+#####.##.###..####..
+..######..##.#######
+####.##.####...##..#
+.#####..#.######.###
+##...#.##########...
+#.##########.#######
+.####.#.###.###.#.##
+....##.##.###..#####
+.#.#.###########.###
+#.#.#.#####.####.###
+###.##.####.##.#..##"""
+	grid_5 = np.array([[c for c in line] for line in s.split('\n')])
+
 	assert max_astero_seen(grid_1) == (8, 3, 4)
 	print("assert 1 OK")
 	assert max_astero_seen(grid_2) == (33, 5, 8) 
@@ -65,5 +87,23 @@ if __name__ == '__main__':
 	print("assert 3 OK")
 	assert max_astero_seen(grid_4) == (41, 6, 3)
 	print("assert 4 OK")
+	assert max_astero_seen(grid_5) == (210, 11, 13)
+	print("assert 5 OK")
 
-	print(f"Result of first star is {max_astero_seen(grid)}")
+	location = max_astero_seen(grid)
+	print(f"Result of first star is {location[0]}")
+
+	assert vaporized(grid_5, (11, 13), 1) == [12, 11]
+	assert vaporized(grid_5, (11, 13), 2) == [1, 12]
+	assert vaporized(grid_5, (11, 13), 3) == [2, 12]
+	assert vaporized(grid_5, (11, 13), 10) == [8, 12]
+	assert vaporized(grid_5, (11, 13), 20) == [0, 16]
+	assert vaporized(grid_5, (11, 13), 50) == [9, 16]
+	assert vaporized(grid_5, (11, 13), 100) == [16, 10]
+	assert vaporized(grid_5, (11, 13), 199) == [6, 9]
+	assert vaporized(grid_5, (11, 13), 200) == [2, 8]
+	assert vaporized(grid_5, (11, 13), 201) == [9, 10]
+	assert vaporized(grid_5, (11, 13), 299) == [1, 11]
+
+	y, x = vaporized(grid, location[1:], 200)
+	print(f"Result of second star is {100*x+y}")
