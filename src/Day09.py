@@ -1,4 +1,4 @@
-from src.Day07 import Amplifier
+from src.lib.intcode import Amplifier
 
 if __name__ == '__main__':
 	with open("../inputs/Day09_input.txt", "r") as f:
@@ -15,3 +15,4 @@ if __name__ == '__main__':
 	assert Amplifier(program_3).run() == program_3[1]
 
 	print(f"The result of first star is {Amplifier(program).run(1)}")
+	print(f"The result of first star is {Amplifier(program).run(2)}")

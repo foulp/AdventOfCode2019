@@ -35,45 +35,52 @@ def opcode_plus(program, pointeur=0, inputs=[], relative_base=0):
     opcode = instruction % 100
     modes = instruction // 100
 
-    param_1, param_2 = None, None
-    if opcode in [1, 2, 4, 5, 6, 7, 8, 9]:
-        if modes % 10 == 1:
-            param_1 = program[pointeur+1]
-        else:
-            param_1 = program[program[pointeur+1] + relative_base*(modes % 10 == 2)]
+    # Get first parameter
+    if modes % 10 == 1:
+        param_1 = pointeur+1
+    else:
+        param_1 = program[pointeur+1] + relative_base*(modes % 10 == 2)
+
+    # Get second and third parameter if needed
+    param_2, param_3 = None, None
     if opcode in [1, 2, 5, 6, 7, 8]:
-        if modes//10 == 1:
-            param_2 = program[pointeur+2]
+        if modes//10 % 10 == 1:
+            param_2 = pointeur+2
         else:
-            param_2 = program[program[pointeur+2] + relative_base*(modes//10 == 2)]
+            param_2 = program[pointeur+2] + relative_base*(modes//10 % 10 == 2)
+    if opcode in [1, 2, 7, 8]:
+        if modes//100 % 10 == 1:
+            param_3 = pointeur+3
+        else:
+            param_3 = program[pointeur+3] + relative_base*(modes//100 % 10 == 2)
 
     if opcode in [1, 2, 3, 5, 6, 7, 8, 9]:
         if opcode in [1, 2, 7, 8]:
-            program += [0] * max(0, program[pointeur+3]-len(program)+1)
-        if opcode == 3:
-            program += [0] * max(0, program[pointeur+1]-len(program)+1)
+            program += [0] * max(0, param_3-len(program)+1)
+        elif opcode == 3:
+            program += [0] * max(0, param_1-len(program)+1)
 
         if opcode == 1:
-            program[program[pointeur+3]] = param_1 + param_2
+            program[param_3] = program[param_1] + program[param_2]
             pointeur += 4
         elif opcode == 2:
-            program[program[pointeur+3]] = param_1 * param_2
+            program[param_3] = program[param_1] * program[param_2]
             pointeur += 4
         elif opcode == 3:
-            program[program[pointeur+1]] = inputs.pop(0) if len(inputs) else int(input("Input value?"))
+            program[param_1] = inputs.pop(0) if len(inputs) else int(input("Input value?"))
             pointeur += 2
         elif opcode == 5:
-            pointeur = param_2 if param_1 != 0 else pointeur+3
+            pointeur = program[param_2] if program[param_1] != 0 else pointeur+3
         elif opcode == 6:
-            pointeur = param_2 if param_1 == 0 else pointeur+3
+            pointeur = program[param_2] if program[param_1] == 0 else pointeur+3
         elif opcode == 7:
-            program[program[pointeur+3]] = 1 if param_1 < param_2 else 0
+            program[param_3] = 1 if program[param_1] < program[param_2] else 0
             pointeur += 4
         elif opcode == 8:
-            program[program[pointeur+3]] = 1 if param_1 == param_2 else 0
+            program[param_3] = 1 if program[param_1] == program[param_2] else 0
             pointeur += 4
         elif opcode == 9:
-            relative_base += param_1
+            relative_base += program[param_1]
             pointeur += 2
 
         return {"output": 1, "program": program, "pointeur": pointeur, "inputs": inputs, "relative_base": relative_base}
@@ -81,7 +88,7 @@ def opcode_plus(program, pointeur=0, inputs=[], relative_base=0):
     elif opcode == 4:
         pointeur += 2
         return {"output": 2, "program": program, "pointeur": pointeur, "inputs": inputs, "relative_base": relative_base,
-                "value": param_1}
+                "value": program[param_1]}
 
     elif opcode == 99:
         return {"output": 99}
