@@ -35,7 +35,7 @@ if __name__ == '__main__':
 	colors = EmergencyHullPainting(program[:], 1).run()
 	rows = [coord[1] for coord in colors.keys()]
 	colons = [coord[0] for coord in colors.keys()]
-	r = np.zeros((max(rows) - min(rows) + 1, max(colons) - min(colons) + 1))
+	r = np.zeros((max(colons) - min(colons) + 1, max(rows) - min(rows) + 1))
 	for (x, y), c in colors.items():
 		r[y, x] = c
 
