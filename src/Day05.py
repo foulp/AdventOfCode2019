@@ -5,11 +5,11 @@ if __name__ == '__main__':
 		intcode_txt = f.read()
 
 	program = list(map(int, intcode_txt.split(',')))
-	dico = {"pointeur": 0, "output": 1, "program": program, "inputs": [1]}
+	dico = {"pointer": 0, "output": 1, "program": program, "inputs": [1]}
 	r = []
 	c = 0
 	while dico["output"] > 0:
-		dico = opcode_plus(dico["program"], dico["pointeur"], dico["inputs"])
+		dico = opcode_plus(dico["program"], dico["pointer"], dico["inputs"])
 		c += 1
 		if dico["output"] != 1:
 			r.append((c, dico))
@@ -21,11 +21,11 @@ if __name__ == '__main__':
 	print(f'Result of first star is {r[-2][1]["value"]}')
 
 	program = list(map(int, intcode_txt.split(',')))
-	dico = {"pointeur": 0, "output": 1, "program": program, "inputs": [5]}
+	dico = {"pointer": 0, "output": 1, "program": program, "inputs": [5]}
 	r = []
 	c = 0
 	while dico["output"] > 0:
-		dico = opcode_plus(dico["program"], dico["pointeur"], dico["inputs"])
+		dico = opcode_plus(dico["program"], dico["pointer"], dico["inputs"])
 		c += 1
 		if dico["output"] != 1:
 			r.append((c, dico))
