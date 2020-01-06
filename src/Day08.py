@@ -15,7 +15,7 @@ r = []
 for j in range(6):
 	for i in range(25):
 		pixel = [l[i+25*j] for l in layers]
-		r.append(next((int(p) for p in pixel if p!='2')))
+		r.append(next((int(p) for p in pixel if p != '2')))
 
-plt.imshow(np.array(r).reshape(6,25), cmap=plt.cm.gray)
+plt.imshow(np.array(r).reshape(6, 25), cmap=plt.cm.gray)
 plt.show()
