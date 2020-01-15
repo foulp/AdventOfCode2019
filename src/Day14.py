@@ -3,7 +3,7 @@ import networkx as nx
 
 
 class Reactions:
-	def __init__(self, reactions_inv):
+	def __init__(self, reactions_inv, fuel_needed):
 		self.reactions_inv = reactions_inv
 
 		self.network = nx.DiGraph()
@@ -13,20 +13,35 @@ class Reactions:
 				self.network.add_edge(reagent.split(' ')[1], product.split()[1], value=int(reagent.split()[0]))
 		self.network.nodes['ORE']['production'] = 1
 		self.network.nodes['ORE']['amount'] = 0
-		self.network.nodes['FUEL']['amount'] = 1
+		self.network.nodes['FUEL']['amount'] = fuel_needed
 
 	def find_n_ore(self):
 		needed = ['FUEL']
 
-		while needed:
+		while needed != ['ORE']:
 			chemical = needed.pop(0)
 			n_reactions = math.ceil(self.network.nodes[chemical]['amount'] / self.network.nodes[chemical]['production'])
-			for node in list(self.network.predecessors(chemical)):
+			for node in self.network.predecessors(chemical):
 				self.network.nodes[node]['amount'] += n_reactions * self.network.get_edge_data(node, chemical)['value']
-				self.network.remove_edge(node, chemical)
-				if len(list(self.network.successors(node))) == 0:
+				if len(list(self.network.successors(node))) == 1:
 					needed.append(node)
+			self.network.remove_node(chemical)
 		return self.network.nodes['ORE']['amount']
+
+
+def search(reactions, stock=1e12):
+	fuel_produced = 1
+	while Reactions(reactions, fuel_produced).find_n_ore() < stock:
+		fuel_produced *= 10
+	low_limit = fuel_produced // 10
+	high_limit = fuel_produced
+	while low_limit < high_limit:
+		threshold = Reactions(reactions, (low_limit + high_limit) // 2).find_n_ore()
+		if threshold > stock:
+			high_limit = (low_limit + high_limit) // 2
+		else:
+			low_limit = (low_limit + high_limit) // 2 + 1
+	return low_limit - 1
 
 
 if __name__ == '__main__':
@@ -90,10 +105,15 @@ if __name__ == '__main__':
 7 XCVML => 6 RJRHP
 5 BHXH, 4 VRPVC => 5 LTCX""".split('\n'))
 
-	assert Reactions(reactions1).find_n_ore() == 31
-	assert Reactions(reactions2).find_n_ore() == 165
-	assert Reactions(reactions3).find_n_ore() == 13312
-	assert Reactions(reactions4).find_n_ore() == 180697
-	assert Reactions(reactions5).find_n_ore() == 2210736
+	assert Reactions(reactions1, 1).find_n_ore() == 31
+	assert Reactions(reactions2, 1).find_n_ore() == 165
+	assert Reactions(reactions3, 1).find_n_ore() == 13312
+	assert Reactions(reactions4, 1).find_n_ore() == 180697
+	assert Reactions(reactions5, 1).find_n_ore() == 2210736
 
-	print(f'The result of first star is {Reactions(reactions).find_n_ore()}')
+	print(f'The result of first star is {Reactions(reactions, 1).find_n_ore()}')
+
+	assert search(reactions3) == 82892753
+	assert search(reactions4) == 5586022
+	assert search(reactions5) == 460664
+	print(f'The result of second star is {search(reactions)}')
