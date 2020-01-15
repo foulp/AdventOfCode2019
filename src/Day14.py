@@ -1,5 +1,4 @@
 import math
-import matplotlib.pyplot as plt
 import networkx as nx
 
 
@@ -9,37 +8,25 @@ class Reactions:
 
 		self.network = nx.DiGraph()
 		for product, reagents_list in self.reactions_inv.items():
-			self.network.add_node(product.split()[1], producted=product.split()[0], amount=0)
+			self.network.add_node(product.split()[1], production=int(product.split()[0]), amount=0)
 			for reagent in reagents_list.split(', '):
-				self.network.add_edge(reagent.split(' ')[1], product.split()[1], value=reagent.split()[0])
-		self.network.nodes['ORE']['producted'] = 0
+				self.network.add_edge(reagent.split(' ')[1], product.split()[1], value=int(reagent.split()[0]))
+		self.network.nodes['ORE']['production'] = 1
 		self.network.nodes['ORE']['amount'] = 0
-
-		self.dist = nx.single_source_shortest_path_length(self.network, 'ORE')
-
-	def find_next_agent(self, dico):
-		max_distance_from_ore = max(self.dist[x] for x in dico)
-		candidates = [c for c in dico if self.dist[c] == max_distance_from_ore]
-		agent = max(candidates, key=lambda c: sum(self.network.has_edge(c2, c) for c2 in candidates))
-		for a in self.reactions_inv:
-			if agent in a:
-				agent = a
-				break
-		reagents = []
-		for r in self.reactions_inv[agent].split(', '):
-			n_reagent, reagent = r.split()
-			reagents.append((int(n_reagent) * math.ceil(dico[agent.split()[1]] / int(agent.split()[0])), reagent))
-		return reagents, agent.split()[1]
+		self.network.nodes['FUEL']['amount'] = 1
 
 	def find_n_ore(self):
-		needed = {'FUEL': 1}
+		needed = ['FUEL']
 
-		while list(needed.keys()) != ['ORE']:
-			reagents, chemical = self.find_next_agent(needed)
-			for n, agent in reagents:
-				needed[agent] = needed.get(agent, 0) + n
-			del needed[chemical]
-		return needed['ORE']
+		while needed:
+			chemical = needed.pop(0)
+			n_reactions = math.ceil(self.network.nodes[chemical]['amount'] / self.network.nodes[chemical]['production'])
+			for node in list(self.network.predecessors(chemical)):
+				self.network.nodes[node]['amount'] += n_reactions * self.network.get_edge_data(node, chemical)['value']
+				self.network.remove_edge(node, chemical)
+				if len(list(self.network.successors(node))) == 0:
+					needed.append(node)
+		return self.network.nodes['ORE']['amount']
 
 
 if __name__ == '__main__':
