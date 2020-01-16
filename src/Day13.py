@@ -10,9 +10,25 @@ def plot_game(tiles):
 	values = tiles[2::3]
 	r = np.zeros((max(colons) - min(colons) + 1, max(rows) - min(rows) + 1))
 	for x, y, c in zip(rows, colons, values):
-		r[y, x] = colors[c]
+		if not (x == -1 and y == 0):
+			r[y, x] = colors[c]
 	plt.imshow(r)
 	plt.show()
+
+
+def next_move(board):
+	paddle = next((i for i in range(len(board) - 1, 0, -1) if board[i] == 3), 2)
+	xp = board[paddle-2]
+	ball = next((i for i in range(len(board) - 1, 0, -1) if board[i] == 4), 2)
+	xb = board[ball-2]
+	ball = next((i for i in range(ball - 1, 0, -1) if board[i] == 3), 0)
+	if ball:
+		xb_1 = board[ball-2]
+	else:
+		xb_1 = xb - 1
+	xb += (xb - xb_1)
+
+	return np.sign(xb - xp)
 
 
 if __name__ == '__main__':
@@ -24,14 +40,22 @@ if __name__ == '__main__':
 	while not amp.done:
 		outputs.append(amp.run())
 	print(f"The result of first star is {sum([tile_id == 2 for tile_id in outputs[2::3]])}.")
-	plot_game(outputs)
 	program[0] = 2
-	outputs = []
 	amp = Amplifier(program[:])
+	pos_tile = []
+	outputs = [amp.run(), amp.run(), amp.run()]
 	while not amp.done:
-		outputs.append(amp.run(np.random.randint(0, 3)))
-		if len(outputs) > 2 and outputs[-1] == 0 and outputs[-2] == -1:
-			print(outputs[0], len(outputs))
-
-	k = next(i for i in range(len(outputs) - 1, 0, -1) if outputs[i] == 0 and outputs[i-1] == -1)
-	print(f"The result of second star is {outputs[k+1]}")
+		amp.inputs = [next_move(outputs)]
+		value = amp.run()
+		if len(pos_tile) <= 2:
+			pos_tile.append(value)
+		if len(pos_tile) == 3:
+			if pos_tile[:2] == [-1, 0]:
+				print(f"Current score is {pos_tile[2]}")
+			else:
+				outputs.extend(pos_tile)
+			if pos_tile[2] == 4: print(f"Ball is at {pos_tile[:2]}")
+			if pos_tile[2] == 3:
+				print(f"Paddle is at {pos_tile[:2]}")
+				#plot_game(outputs)
+			pos_tile = []
