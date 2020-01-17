@@ -13,7 +13,7 @@ class Arcade:
 
 	def plot_game(self):
 		colors = [0, 1, 2, 1, 3]
-		r = np.zeros(max(self.board.keys()))
+		r = np.zeros((max(v[1] for v in self.board.keys()) + 1, max(v[0] for v in self.board.keys()) + 1))
 		for (pos_x, pos_y), c in self.board.items():
 			r[pos_y, pos_x] = colors[c]
 		plt.imshow(r)
