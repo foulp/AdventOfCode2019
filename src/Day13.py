@@ -3,45 +3,26 @@ import numpy as np
 from src.lib.intcode import Amplifier
 
 
-def plot_game(tiles):
-	colors = [0, 1, 2, 1, 3]
-	rows = tiles[:-1:3]
-	colons = tiles[1::3]
-	values = tiles[2::3]
-	r = np.zeros((max(colons) - min(colons) + 1, max(rows) - min(rows) + 1))
-	for x, y, c in zip(rows, colons, values):
-		if not (x == -1 and y == 0):
-			r[y, x] = colors[c]
-	plt.imshow(r)
-	plt.show()
+class Arcade:
+	def __init__(self, verbose=False):
+		self.board = {}
+		self.score = 0
+		self.ball = None
+		self.paddle = None
+		self.verbose = verbose
 
+	def plot_game(self):
+		colors = [0, 1, 2, 1, 3]
+		r = np.zeros(max(self.board.keys()))
+		for (pos_x, pos_y), c in self.board.items():
+			r[pos_y, pos_x] = colors[c]
+		plt.imshow(r)
+		plt.show()
 
-def next_move(board):
-	paddle = next((i for i in range(len(board) - 1, 0, -1) if board[i] == 3), 2)
-	xp = board[paddle-2]
-	ball = next((i for i in range(len(board) - 1, 0, -1) if board[i] == 4), 2)
-	xb, yb = board[ball-2:ball]
-	ball = next((i for i in range(ball - 1, 0, -1) if board[i] == 3), 0)
-	if ball:
-		xb_1 = board[ball-2]
-	else:
-		xb_1 = xb - 1
-
-	if xb > xb_1:
-		k = next((i for i in range(len(board) - 2, 0, -1) if board[i] == yb and board[i-1] == xb+1), -1)
-		if board[k+1] in [1, 2]:
-			print("Hitting wall right")
-			xb_1 = xb + 1
-
-	elif xb < xb_1:
-		k = next((i for i in range(len(board) - 2, 0, -1) if board[i] == yb and board[i-1] == xb-1), -1)
-		if board[k+1] in [1, 2]:
-			print("Hitting wall left")
-			xb_1 = xb - 1
-
-	xb += (xb - xb_1)
-
-	return np.sign(xb - xp)
+	def next_move(self):
+		if self.verbose:
+			print(f'## Ball at {self.ball}, paddle at {self.paddle}, returns {np.sign(self.ball[0] - self.paddle[0])}')
+		return np.sign(self.ball[0] - self.paddle[0])
 
 
 if __name__ == '__main__':
@@ -50,32 +31,34 @@ if __name__ == '__main__':
 
 	outputs = []
 	amp = Amplifier(program[:])
+	arcade = Arcade()
 	while not amp.done:
-		outputs.append(amp.run())
-	print(f"The result of first star is {sum([tile_id == 2 for tile_id in outputs[2::3]])}.")
+		x, y, tile_id = amp.run(), amp.run(), amp.run()
+		arcade.board[(x, y)] = tile_id
+	print(f"The result of first star is {sum(tile_id == 2 for tile_id in arcade.board.values())}.")
 
 	program[0] = 2
 	amp = Amplifier(program[:])
-	pos_tile = []
+	arcade = Arcade()
 	start_playing = False
 	while not amp.done:
-		if start_playing and len(amp.inputs) == 0:
-			# amp.inputs = [next_move(outputs)]
-			value = amp.run(next_move(outputs))
+		if start_playing:
+			amp.inputs = [arcade.next_move()]
+		x, y, value = amp.run(), amp.run(), amp.run()
+		if (x, y) == (-1, 0):
+			arcade.score = value
+			start_playing = True
+			if arcade.verbose:
+				print(f"Current score is {arcade.score}")
 		else:
-			value = amp.run()
-		if len(pos_tile) <= 2:
-			pos_tile.append(value)
+			if value == 4:
+				arcade.ball = (x, y)
+				if arcade.verbose:
+					print(f"Ball is at {(x, y)}")
+			elif value == 3:
+				arcade.paddle = (x, y)
+				if arcade.verbose:
+					print(f"Paddle is at {(x, y)}")
+			arcade.board[(x, y)] = value
 
-		if len(pos_tile) == 3:
-			if pos_tile[:2] == [-1, 0]:
-				print(f"Current score is {pos_tile[2]}")
-				start_playing = True
-			else:
-				outputs.extend(pos_tile)
-			if pos_tile[2] == 4:
-				print(f"Ball is at {pos_tile[:2]}")
-			if pos_tile[2] == 3:
-				print(f"Paddle is at {pos_tile[:2]}")
-				#plot_game(outputs)
-			pos_tile = []
+	print(f'The result of second star is {arcade.score}.')
