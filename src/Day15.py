@@ -9,17 +9,17 @@ class Droid:
 	def __init__(self):
 		self.map = {(0, 0): 2}
 		self.pos = (0, 0)
+		self.shortest_path = {(0, 0): 0}
 		self.oxygen = None
 
 	def plot_game(self):
-		colors = [0, 1, 2]
 		min_x = min(v[0] for v in self.map.keys())
 		min_y = min(v[1] for v in self.map.keys())
 		size_x = max(v[0] for v in self.map.keys()) - min_x + 1
 		size_y = max(v[1] for v in self.map.keys()) - min_y + 1
-		r = 3 * np.ones((size_x, size_y))
+		r = 3 * np.ones((size_y, size_x))
 		for (pos_x, pos_y), c in self.map.items():
-			r[pos_x + min_x, pos_y + min_y] = colors[c]
+			r[pos_y - min_y, pos_x - min_x] = c
 		plt.imshow(r)
 		plt.show()
 
@@ -33,11 +33,6 @@ class Droid:
 		if n == 4:
 			return self.pos[0] - 1, self.pos[1]
 		raise ValueError(f"direction should be in [1, 2, 3, 4], it was {n}.")
-
-	def shortest_path(self):
-		xs, ys = 0, 0
-		xo, yo = self.oxygen
-		return 0
 
 
 if __name__ == '__main__':
@@ -56,6 +51,11 @@ if __name__ == '__main__':
 		x, y = droid.move(direction)
 		location = amp.run(direction)
 		droid.map[(x, y)] = location
+		if (x, y) in droid.shortest_path:
+			droid.shortest_path[(x, y)] = min(droid.shortest_path[droid.pos] + 1, droid.shortest_path[(x, y)])
+		else:
+			droid.shortest_path[(x, y)] = droid.shortest_path[droid.pos] + 1
+
 		if location != 0:
 			droid.pos = (x, y)
 		if location == 2:
@@ -63,4 +63,4 @@ if __name__ == '__main__':
 
 	droid.plot_game()
 
-	print(f"The result of first star is {droid.shortest_path()}")
+	print(f"The result of first star is {droid.shortest_path[droid.oxygen]}")
