@@ -46,7 +46,6 @@ if __name__ == '__main__':
 	scaffold.calculate_alignment_parameter()
 	print(f"The result of first star is {scaffold.alignment_parameter}")
 
-	commands = 'R'
 	program[0] = 2
-	amp = Amplifier(program[:])
+	scaffold = Scaffold(program[:])
 	print(f"The result of second star is {0}")
