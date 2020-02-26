@@ -10,9 +10,12 @@ class Amplifier:
         self.done = False
         self.value = None
 
-    def run(self, value=None):
-        if value is not None:
-            self.inputs.append(value)
+    def run(self, values=None):
+        if values is not None:
+            if type(values) == int:
+                self.inputs.append(values)
+            else:
+                self.inputs.extend(values)
 
         while self.opcode_plus():
             pass
