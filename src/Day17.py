@@ -6,6 +6,9 @@ class Scaffold:
 	def __init__(self, intcode):
 		self.amp = Amplifier(intcode)
 		self.grid = self.construct_grid()
+		self.path = []
+		self.main = []
+		self.functions = []
 		x, y = np.where(np.isin(self.grid, list(map(ord, ['^', 'v', '>', '<']))))
 		self.x = x[0]
 		self.y = y[0]
@@ -35,7 +38,6 @@ class Scaffold:
 		return self.alignment_parameter
 
 	def find_path(self):
-		path = []
 		while True:
 			x_l, y_l = self.turn('L')
 			x_r, y_r = self.turn('R')
@@ -46,7 +48,7 @@ class Scaffold:
 			else:
 				break
 
-			path.append(next_d)
+			self.path.append(next_d)
 			self.direction = (self.direction+1 if next_d == 'R' else self.direction-1) % 4
 			k = 0
 			x_s, y_s = self.straight()
@@ -54,8 +56,7 @@ class Scaffold:
 				k += 1
 				self.x, self.y = x_s, y_s
 				x_s, y_s = self.straight()
-			path.append(str(k))
-		return path
+			self.path.append(str(k))
 
 	def straight(self):
 		if self.direction == 0:
@@ -80,17 +81,26 @@ class Scaffold:
 		raise Exception(f"self.direction should be in [0-3] and direction in ['L', 'R'], "
 						f"self.direction={self.direction} and direction={direction}")
 
+	def determine_functions(self, chemin, n=3):
+		if len(self.functions) == n:
+			return len(chemin) == 0
 
-def determine_functions(chemin):
-	for i in range(2, len(chemin), 2):
-		a = ''.join(chemin[:i])
-		for j in range(2, len(chemin) - i, 2):
-			b = ''.join(chemin[i: i+j])
-			for k in range(2, len(chemin) - i - j, 2):
-				c = ''.join(chemin[i+j: i+j+k])
-
-				pass
-	return path
+		k = len(self.main)
+		for i in range(2, min(len(chemin)+2, 22), 2):
+			self.functions.append(chemin[:i])
+			self.main.append('ABC'[len(self.functions)-1])
+			chemin_cut = chemin[i:]
+			while any(''.join(chemin_cut).startswith(''.join(pattern)) for pattern in self.functions):
+				for j, pattern in enumerate(self.functions):
+					if ''.join(chemin_cut).startswith(''.join(pattern)):
+						chemin_cut = chemin_cut[len(pattern):]
+						self.main.append('ABC'[j])
+			if self.determine_functions(chemin_cut):
+				return True
+			else:
+				self.functions.pop()
+				self.main = self.main[:k]
+		return False
 
 
 def commands_to_ascii(function_commands):
@@ -99,8 +109,6 @@ def commands_to_ascii(function_commands):
 		ascii_list.append(list(map(ord, command+'\n')))
 	return ascii_list
 
-
-commands = ['A,A,B,C,B,C,B,C,A,C', 'R,6,L,8,R,8', 'R,4,R,6,R,6,R,4,R,4', 'L,8,R,6,L,10,L,10', 'n']
 
 if __name__ == '__main__':
 	with open('../inputs/Day17_input.txt', 'r') as f:
@@ -112,17 +120,19 @@ if __name__ == '__main__':
 
 	program[0] = 2
 	scaffold = Scaffold(program[:])
-	path = scaffold.find_path()
+	scaffold.find_path()
+	scaffold.determine_functions(scaffold.path)
 	message = ''
-	inputs = commands_to_ascii(commands)
+	inputs = commands_to_ascii([','.join(scaffold.main)] + [','.join(v) for v in scaffold.functions] + ['n'])
 	while len(inputs):
-		case = scaffold.amp.run()
-		message += chr(case)
-		if case == ord('\n'):
+		out_case = scaffold.amp.run()
+		message += chr(out_case)
+		if out_case == ord('\n'):
 			print(message)
 			message = chr(scaffold.amp.run(inputs.pop(0)))
 
+	out_case = 0
 	while not scaffold.amp.done:
-		case = scaffold.amp.run()
+		out_case = scaffold.amp.run()
 
-	print(f"The result of second star is {case}")
+	print(f"The result of second star is {out_case}")
