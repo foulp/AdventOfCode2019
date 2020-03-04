@@ -1,4 +1,5 @@
 import networkx as nx
+from networkx.algorithms.shortest_paths.generic import shortest_path
 import numpy as np
 
 alphabet = ''.join(chr(i) for i in range(ord('A'), ord('Z')+1))
@@ -7,56 +8,67 @@ alphabet = ''.join(chr(i) for i in range(ord('A'), ord('Z')+1))
 class Maze:
     def __init__(self, grid):
         self.grid = grid
-        self.graph = nx.Graph()
+        self.graph = nx.DiGraph()
         self.doors = {}
         self.keys = {}
         for i in range(self.grid.shape[0]):
             for j in range(self.grid.shape[1]):
                 if grid[i, j] == '#':
                     continue
-                if self.grid[i, j] in alphabet.lower()+'.':
-                    if self.grid[i, j] == '.':
-                        self.graph.add_node((i, j))
-                    else:
-                        self.graph.add_node((i, j), name=self.grid[i, j])
-                        self.keys[self.grid[i, j]] = (i, j)
-
-                    if (i-1, j) in self.graph:
-                        self.graph.add_edge((i-1, j), (i, j))
-                    if (i, j-1) in self.graph:
-                        self.graph.add_edge((i, j-1), (i, j))
-                else:
-                    self.graph.add_node((i, j), name=self.grid[i, j])
+                self.graph.add_node((i, j))
+                if self.grid[i, j] in alphabet.lower():
+                    self.keys[self.grid[i, j]] = (i, j)
+                elif self.grid[i, j] in alphabet:
                     self.doors[self.grid[i, j]] = (i, j)
+
+                for x, y in [(i-1, j), (i, j-1)]:
+                    if (x, y) in self.graph:
+                        if self.grid[x, y] not in alphabet or self.grid[i, j] in alphabet:
+                            self.graph.add_edge((x, y), (i, j))
+
+                        if self.grid[i, j] not in alphabet or self.grid[x, y] in alphabet:
+                            self.graph.add_edge((i, j), (x, y))
 
         x, y = np.where(grid == '@')
         self.x = x[0]
         self.y = y[0]
-        self.pickup = []
-        self.compteur = 0
-        self.high_boundary = grid.shape[0] * grid.shape[1] * len(self.doors)
 
     def shortest_path(self):
-        if len(self.pickup) == len(self.keys[0]):
-            self.high_boundary = min(self.high_boundary, self.compteur)
-            return True
-        if self.compteur >= self.high_boundary:
-            return False
+        shortest = self.grid.shape[0] * self.grid.shape[1] * len(self.keys)
+        visited = {}
+        queue = [{'pos': (self.x, self.y), 'keys': '', 'length': 0}]
+        while len(queue):
+            current = queue.pop(0)
+            for key, dist in self.accessible_keys(current):
+                situation = {'pos': self.keys[key],
+                             'keys': current['keys']+key,
+                             'length': current['length'] + dist}
+                if visited.get((situation['pos'], ''.join(sorted(situation['keys']))), -1) > situation['length']:
+                    continue
 
-        prev_x, prev_y = self.x, self.y
-        for key, dist in self.accessible_keys():
-            self.x, self.y = self.keys[key]
-            self.compteur += dist
-            if self.shortest_path():
-                return True
-            self.compteur -= dist
-            self.x, self.y = prev_x, prev_y
+                visited[(situation['pos'], ''.join(sorted(situation['keys'])))] = situation['length']
+                queue.append(situation)
 
-        return False
+                if len(situation['keys']) == len(self.keys):
+                    print(situation['keys'], situation['length'])
+                    shortest = min(shortest, situation['length'])
+        return shortest
 
-    def accessible_keys(self):
+    def accessible_keys(self, situation):
+        for key in situation['keys']:
+            if key.upper() in self.doors:
+                for n in self.graph.predecessors(self.doors[key.upper()]):
+                    self.graph.add_edge(self.doors[key.upper()], n)
 
-        return []
+        for key in [k for k in self.keys if k not in situation['keys']]:
+            if nx.has_path(self.graph, situation['pos'], self.keys[key]):
+                yield key, len(shortest_path(self.graph, situation['pos'], self.keys[key])) - 1
+
+        for key in situation['keys']:
+            if key.upper() in self.doors:
+                for n in self.graph.predecessors(self.doors[key.upper()]):
+                    if self.grid[n] not in alphabet:
+                        self.graph.add_edge(self.doors[key.upper()], n)
 
 
 if __name__ == '__main__':
@@ -66,6 +78,6 @@ if __name__ == '__main__':
 
     maze = Maze(grid)
 
-    print(f"The result of first star is {0}")
+    print(f"The result of first star is {maze.shortest_path()}")
 
     print(f"The result of second star is {0}")
