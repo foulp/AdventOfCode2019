@@ -8,7 +8,7 @@ alphabet = ''.join(chr(i) for i in range(ord('A'), ord('Z')+1))
 class Maze:
     def __init__(self, grid):
         self.grid = grid
-        self.graph = nx.DiGraph()
+        self.graph = nx.Graph()
         self.doors = {}
         self.keys = {}
         for i in range(self.grid.shape[0]):
@@ -16,6 +16,7 @@ class Maze:
                 if grid[i, j] == '#':
                     continue
                 self.graph.add_node((i, j))
+
                 if self.grid[i, j] in alphabet.lower():
                     self.keys[self.grid[i, j]] = (i, j)
                 elif self.grid[i, j] in alphabet:
@@ -23,30 +24,30 @@ class Maze:
 
                 for x, y in [(i-1, j), (i, j-1)]:
                     if (x, y) in self.graph:
-                        if self.grid[x, y] not in alphabet or self.grid[i, j] in alphabet:
-                            self.graph.add_edge((x, y), (i, j))
-
-                        if self.grid[i, j] not in alphabet or self.grid[x, y] in alphabet:
-                            self.graph.add_edge((i, j), (x, y))
+                        self.graph.add_edge((x, y), (i, j))
 
         x, y = np.where(grid == '@')
-        self.x = x[0]
-        self.y = y[0]
+        self.start = x[0], y[0]
 
     def shortest_path(self):
         shortest = self.grid.shape[0] * self.grid.shape[1] * len(self.keys)
-        visited = {}
-        queue = [{'pos': (self.x, self.y), 'keys': '', 'length': 0}]
+        visited = {(self.start, ''): 0}
+        queue = [{'pos': self.start, 'keys': '', 'length': 0}]
         while len(queue):
             current = queue.pop(0)
-            for key, dist in self.accessible_keys(current):
-                situation = {'pos': self.keys[key],
-                             'keys': current['keys']+key,
-                             'length': current['length'] + dist}
-                if visited.get((situation['pos'], ''.join(sorted(situation['keys']))), -1) > situation['length']:
+            if current['length'] >= shortest:
+                continue
+            if visited[(current['pos'], current['keys'])] < current['length']:
+                continue
+
+            for pickup, dist in self.accessible_keys(current):
+                situation = {'pos': self.keys[pickup[0]], 'keys': ''.join(sorted(current['keys']+pickup)),
+                             'length': current['length']+dist}
+
+                if visited.get((situation['pos'], situation['keys']), 10**6) <= situation['length']:
                     continue
 
-                visited[(situation['pos'], ''.join(sorted(situation['keys'])))] = situation['length']
+                visited[(situation['pos'], situation['keys'])] = situation['length']
                 queue.append(situation)
 
                 if len(situation['keys']) == len(self.keys):
@@ -55,20 +56,20 @@ class Maze:
         return shortest
 
     def accessible_keys(self, situation):
-        for key in situation['keys']:
-            if key.upper() in self.doors:
-                for n in self.graph.predecessors(self.doors[key.upper()]):
-                    self.graph.add_edge(self.doors[key.upper()], n)
+        candidates = self.keys.keys() - situation['keys']
+        for key in candidates:
+            path = shortest_path(self.graph, situation['pos'], self.keys[key])
+            pickup = key
+            opened = True
+            for case in path[1:-1]:
+                if self.grid[case] in alphabet and self.grid[case].lower() not in situation['keys']:
+                    opened = False
+                    break
+                if self.grid[case] in candidates:
+                    pickup += self.grid[case]
 
-        for key in [k for k in self.keys if k not in situation['keys']]:
-            if nx.has_path(self.graph, situation['pos'], self.keys[key]):
-                yield key, len(shortest_path(self.graph, situation['pos'], self.keys[key])) - 1
-
-        for key in situation['keys']:
-            if key.upper() in self.doors:
-                for n in self.graph.predecessors(self.doors[key.upper()]):
-                    if self.grid[n] not in alphabet:
-                        self.graph.add_edge(self.doors[key.upper()], n)
+            if opened:
+                yield pickup, len(path) - 1
 
 
 if __name__ == '__main__':
