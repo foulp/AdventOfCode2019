@@ -71,7 +71,6 @@ class Maze:
             for pos in situation['pos']:
                 if not nx.has_path(self.graph, pos, self.keys[key]):
                     continue
-                # path = shortest_path(self.graph, situation['pos'], self.keys[key])
                 path = shortest_path(self.graph, pos, self.keys[key])
                 pickup = ''
                 opened = True
@@ -96,5 +95,8 @@ if __name__ == '__main__':
     t = time.time()
     print(f"The result of first star is {maze.shortest_path()}")
     print(time.time()-t)
+
+    t = time.time()
     maze = Maze(grid, n=4)
     print(f"The result of second star is {maze.shortest_path()}")
+    print(time.time() - t)
