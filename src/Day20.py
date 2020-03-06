@@ -10,78 +10,49 @@ class Maze:
         self.graph = nx.Graph()
         self.portals = {}
 
-        x, y = np.where(grid == '@')
-        self.start = (x[0], y[0])
-
         for i in range(self.grid.shape[0]):
             for j in range(self.grid.shape[1]):
                 if grid[i, j] in '# ':
                     continue
 
                 elif grid[i, j] in alphabet:
-                    if grid[i-1, j] in alphabet and grid[i-2, j] == '.':
-                        self.graph.add_node((i-1, j))
-                        self.portals[(i-1, j)] = self.portals.get((i-1, j), []) + [grid[i-1, j] + grid[i, j]]
+                    if i+1 < grid.shape[0] and i > 0 and grid[i+1, j] in alphabet and grid[i-1, j] == '.':
+                        code_portal = grid[i, j] + grid[i+1, j]
+                        self.portals[code_portal] = self.portals.get(code_portal, []) + [(i-1, j)]
 
-                    elif grid[i, j-1] in alphabet and grid[i, j-2] == '.':
-                        self.graph.add_node((i, j-1))
-                        self.portals[(i, j-1)] = self.portals.get((i, j-1), []) + [grid[i, j-1] + grid[i, j]]
+                    elif i+2 < grid.shape[0] and grid[i+1, j] in alphabet and grid[i+2, j] == '.':
+                        code_portal = grid[i, j] + grid[i+1, j]
+                        self.portals[code_portal] = self.portals.get(code_portal, []) + [(i+2, j)]
 
-                    elif grid[i+1, j] in alphabet and grid[i+2, j] == '.':
-                        self.graph.add_node((i+1, j))
-                        self.portals[(i+1, j)] = self.portals.get((i+1, j), []) + [grid[i, j] + grid[i+1, j]]
+                    elif j+2 < grid.shape[1] and grid[i, j+1] in alphabet and grid[i, j+2] == '.':
+                        code_portal = grid[i, j] + grid[i, j+1]
+                        self.portals[code_portal] = self.portals.get(code_portal, []) + [(i, j+2)]
 
-                    elif grid[i, j+1] in alphabet and grid[i, j+2] == '.':
-                        self.graph.add_node((i, j+1))
-                        self.portals[(i, j+1)] = self.portals.get((i, j+1), []) + [grid[i, j] + grid[i, j+1]]
+                    elif j+1 < grid.shape[1] and j > 0 and grid[i, j+1] in alphabet and grid[i, j-1] == '.':
+                        code_portal = grid[i, j] + grid[i, j+1]
+                        self.portals[code_portal] = self.portals.get(code_portal, []) + [(i, j-1)]
 
                 elif grid[i, j] == '.':
                     self.graph.add_node((i, j))
+                    for x, y in [(i-1, j), (i, j-1)]:
+                        if (x, y) in self.graph:
+                            self.graph.add_edge((x, y), (i, j))
 
-                if self.grid[i, j] in alphabet.lower():
-                    self.keys[self.grid[i, j]] = (i, j)
-                elif self.grid[i, j] in alphabet:
-                    self.doors[self.grid[i, j]] = (i, j)
-
-                for x, y in [(i-1, j), (i, j-1)]:
-                    if (x, y) in self.graph:
-                        self.graph.add_edge((x, y), (i, j))
-
-    def shortest_path(self):
-        shortest = self.grid.shape[0] * self.grid.shape[1] * len(self.keys)
-        visited = {(self.start, ''): 0}
-        queue = [{'pos': self.start, 'keys': '', 'length': 0}]
-        while len(queue):
-            current = queue.pop(0)
-            if current['length'] >= shortest-2:
-                continue
-            if visited[(current['pos'], ''.join(sorted(current['keys'])))] < current['length']:
-                continue
-
-            for start, pickup, dist in self.accessible_keys(current):
-                situation = {'pos': tuple(self.keys[pickup[-1]] if p == start else p for p in current['pos']),
-                             'keys': current['keys']+pickup,
-                             'length': current['length']+dist}
-
-                if visited.get((situation['pos'], ''.join(sorted(situation['keys']))), 10**6) <= situation['length']:
-                    continue
-                visited[(situation['pos'], ''.join(sorted(situation['keys'])))] = situation['length']
-
-                if len(situation['keys']) == len(self.keys):
-                    print(situation['keys'], situation['length'])
-                    shortest = min(shortest, situation['length'])
-                    continue
-
-                queue.append(situation)
-
-        return shortest
+        for code, elements in self.portals.items():
+            if code == 'AA':
+                self.start = elements[0]
+            elif code == 'ZZ':
+                self.end = elements[0]
+            else:
+                self.graph.add_edge(elements[0], elements[1])
 
 
 if __name__ == '__main__':
-    with open('../inputs/Day18_input.txt', 'r') as f:
+    with open('../inputs/Day20_input.txt', 'r') as f:
         grid = f.read().split('\n')
+        grid[-1] += ' ' * (len(grid[0]) - len(grid[-1]))
         grid = np.array([[c for c in row] for row in grid])
 
     maze = Maze(grid)
-    print(f"The result of first star is {nx.shortest_path(maze.graph, maze.start, maze.end)}")
+    print(f"The result of first star is {len(nx.shortest_path(maze.graph, maze.start, maze.end)) - 1}")
     print(f"The result of second star is {0}")
