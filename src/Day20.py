@@ -18,17 +18,17 @@ class Maze:
                 elif grid[i, j] in alphabet:
                     if i+1 < grid.shape[0] and i > 0 and grid[i+1, j] in alphabet and grid[i-1, j] == '.':
                         code_portal = grid[i, j] + grid[i+1, j]
-                        layer = 2* (i < self.grid.shape[0] / 2) - 1
+                        layer = 2 * (i < self.grid.shape[0] / 2) - 1
                         self.portals[code_portal] = self.portals.get(code_portal, []) + [((i-1, j), layer)]
 
                     elif i+2 < grid.shape[0] and grid[i+1, j] in alphabet and grid[i+2, j] == '.':
                         code_portal = grid[i, j] + grid[i+1, j]
-                        layer = 2* (i > self.grid.shape[0] / 2) - 1
+                        layer = 2 * (i > self.grid.shape[0] / 2) - 1
                         self.portals[code_portal] = self.portals.get(code_portal, []) + [((i+2, j), layer)]
 
                     elif j+2 < grid.shape[1] and grid[i, j+1] in alphabet and grid[i, j+2] == '.':
                         code_portal = grid[i, j] + grid[i, j+1]
-                        layer = 2* (j > self.grid.shape[1] / 2) - 1
+                        layer = 2 * (j > self.grid.shape[1] / 2) - 1
                         self.portals[code_portal] = self.portals.get(code_portal, []) + [((i, j+2), layer)]
 
                     elif j+1 < grid.shape[1] and j > 0 and grid[i, j+1] in alphabet and grid[i, j-1] == '.':
