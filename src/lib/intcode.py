@@ -10,6 +10,14 @@ class Amplifier:
         self.done = False
         self.value = None
 
+    def run_short(self, values=None, default_input=None):
+        if values is not None:
+            if type(values) == int:
+                self.inputs.append(values)
+            else:
+                self.inputs.extend(values)
+        return self.opcode_plus(default_input)
+
     def run(self, values=None):
         if values is not None:
             if type(values) == int:
@@ -22,7 +30,7 @@ class Amplifier:
 
         return self.value
 
-    def opcode_plus(self):
+    def opcode_plus(self, default_input=None):
         instruction = self.program[self.pointer]
         opcode = instruction % 100
         modes = instruction // 100
@@ -63,7 +71,9 @@ class Amplifier:
                 self.program[param_3] = self.program[param_1] * self.program[param_2]
                 self.pointer += 4
             elif opcode == 3:
-                self.program[param_1] = self.inputs.pop(0) if len(self.inputs) else int(input("Input value?"))
+                self.program[param_1] = self.inputs.pop(0) if len(self.inputs) \
+                    else default_input if default_input \
+                    else int(input("Input value?"))
                 self.pointer += 2
             elif opcode == 5:
                 self.pointer = self.program[param_2] if self.program[param_1] != 0 else self.pointer + 3
