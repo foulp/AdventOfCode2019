@@ -1,5 +1,4 @@
 from src.lib.intcode import Amplifier
-from src.Day17 import Scaffold
 
 if __name__ == '__main__':
     with open('../inputs/Day25_input.txt', 'r') as f:
