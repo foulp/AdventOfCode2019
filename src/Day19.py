@@ -1,4 +1,3 @@
-import numpy as np
 from src.lib.intcode import Amplifier
 
 
