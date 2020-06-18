@@ -28,10 +28,11 @@ if __name__ == '__main__':
     with open('../inputs/Day21_input.txt', 'r') as f:
         program = list(map(int, f.read().split(',')))
 
-    commands = commands_to_ascii(["NOT A J", "NOT B T", "OR T J", "NOT C T", "OR T J", "AND D J", "WALK"])
+    instructions = commands_to_ascii(["NOT A J", "NOT B T", "OR T J", "NOT C T", "OR T J", "AND D J", "WALK"])
 
-    print(f"The result of first star is {run_commands(commands)}")
+    print(f"The result of first star is {run_commands(instructions)}")
 
-    commands = commands_to_ascii(["NOT A J", "NOT B T", "OR T J", "NOT C T", "OR T J", "AND D J", "RUN"])
+    instructions = commands_to_ascii(["NOT A T", "OR T J", "NOT B T", "OR T J", "NOT C T", "OR T J", "AND D J",
+                                      "NOT J T", "OR E T", "OR H T", "AND T J", "RUN"])
 
-    print(f"The result of second star is {run_commands(commands)}")
+    print(f"The result of second star is {run_commands(instructions)}")
